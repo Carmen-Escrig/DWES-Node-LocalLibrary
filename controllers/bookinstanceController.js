@@ -1,13 +1,46 @@
+const Book = require("../models/book");
+const Author = require("../models/author");
+const Genre = require("../models/genre");
 const BookInstance = require("../models/bookinstance");
 
-// Display list of all BookInstances.
-exports.bookinstance_list = (req, res) => {
-  res.send("NOT IMPLEMENTED: BookInstance list");
+const async = require("async");
+
+exports.bookinstance_list = async function (req, res, next) {
+  try {
+    const list_instance_books = await BookInstance.find({}, "book status due_back")
+      .sort({ book: 1 })
+      .populate("book")
+      .exec();
+    res.render("book_instance", { title: "Book", bookinstance_list: list_instance_books });
+  } catch (err) {
+    next(err);
+  }
 };
 
 // Display detail page for a specific BookInstance.
-exports.bookinstance_detail = (req, res) => {
-  res.send(`NOT IMPLEMENTED: BookInstance detail: ${req.params.id}`);
+exports.bookinstance_detail = async (req, res, next) => {
+  try {
+    const results = await Promise.all([
+      BookInstance.findById(req.params.id)
+        .populate("book")
+        .exec(),
+    ]);
+
+    const bookInstance = results[0];
+
+    if (bookInstance == null) {
+      const err = new Error("Book not found");
+      err.status = 404;
+      return next(err);
+    }
+
+    res.render("book_instance_detail", {
+      title: "Book",
+      book_instance: bookInstance,
+    });
+  } catch (err) {
+    return next(err);
+  }
 };
 
 // Display BookInstance create form on GET.

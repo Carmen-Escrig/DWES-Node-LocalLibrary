@@ -1,0 +1,13 @@
+extends layout
+
+block content
+  h1= title
+
+  ul
+    each au in author_list
+      li
+        a(href=au.url) #{au.family_name}, #{au.first_name} 
+        span  (#{au.date_of_birth_formatted} - #{au.date_of_death_formatted})
+
+    else
+      li There are no authors.

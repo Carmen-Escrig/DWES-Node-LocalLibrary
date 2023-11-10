@@ -1,0 +1,10 @@
+extends layout
+
+block content
+  h1 ID: #{book_instance.id}
+  
+  p #[strong Title:]
+    a(href=book_instance.book.url) #{book_instance.book.title}
+  p #[strong Imprint:] #{book_instance.imprint}
+  p #[strong Status:] #{book_instance.status}
+  p #[strong Due back:] #{book_instance.due_back}
