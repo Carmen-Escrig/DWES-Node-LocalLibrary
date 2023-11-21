@@ -77,7 +77,7 @@ exports.author_create_post = [
     .isISO8601()
     .toDate(),
   // Process request after validation and sanitization.
-  (req, res, next) => {
+  async (req, res, next) => {
     // Extract the validation errors from a request.
     const errors = validationResult(req);
 
@@ -99,13 +99,13 @@ exports.author_create_post = [
       date_of_birth: req.body.date_of_birth,
       date_of_death: req.body.date_of_death,
     });
-    author.save((err) => {
-      if (err) {
-        return next(err);
-      }
+    try {
+      await author.save();
       // Successful - redirect to new author record.
       res.redirect(author.url);
-    });
+    } catch (err) {
+      next(err);
+    }
   },
 ];
 
@@ -157,7 +157,7 @@ exports.author_delete_post = async (req, res, next) => {
     }
 
     // Author has no books. Delete object and redirect to the list of authors.
-    await Author.findByIdAndRemove(req.body.authorid);
+    await Author.findByIdAndDelete(req.body.authorid);
     // Success - go to author list
     res.redirect("/catalog/authors");
   } catch (err) {
@@ -192,50 +192,44 @@ exports.author_update_get = async (req, res) => {
   }
 };
 // Handle Author update on POST.
-exports.author_update_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: Author update POST");
-};
-
-// Handle book update on POST.
-exports.book_update_post = [
-  // Convert the genre to an array
-  async (req, res, next) => {
-    if (!Array.isArray(req.body.genre)) {
-      req.body.genre =
-        typeof req.body.genre === "undefined" ? [] : [req.body.genre];
-    }
-    next();
-  },
-
+exports.author_update_post = [
   // Validate and sanitize fields.
-  body("title", "Title must not be empty.")
+  body("first_name")
     .trim()
     .isLength({ min: 1 })
-    .escape(),
-  body("author", "Author must not be empty.")
+    .escape()
+    .withMessage("First name must be specified.")
+    .isAlphanumeric()
+    .withMessage("First name has non-alphanumeric characters."),
+  body("family_name")
     .trim()
     .isLength({ min: 1 })
-    .escape(),
-  body("summary", "Summary must not be empty.")
-    .trim()
-    .isLength({ min: 1 })
-    .escape(),
-  body("isbn", "ISBN must not be empty").trim().isLength({ min: 1 }).escape(),
-  body("genre.*").escape(),
+    .escape()
+    .withMessage("Family name must be specified.")
+    .isAlphanumeric()
+    .withMessage("Family name has non-alphanumeric characters."),
+  body("date_of_birth", "Invalid date of birth")
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .toDate(),
+  body("date_of_death", "Invalid date of death")
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .toDate(),
 
   // Process request after validation and sanitization.
   async (req, res, next) => {
     // Extract the validation errors from a request.
     const errors = validationResult(req);
 
-    // Create a Book object with escaped/trimmed data and old id.
-    const book = new Book({
-      title: req.body.title,
-      author: req.body.author,
-      summary: req.body.summary,
-      isbn: req.body.isbn,
-      genre: typeof req.body.genre === "undefined" ? [] : req.body.genre,
+    // Create a Author object with escaped/trimmed data and old id.
+    const author = new Author({
+      first_name: req.body.first_name,
+      family_name: req.body.family_name,
+      date_of_birth: req.body.date_of_birth,
+      date_of_death: req.body.date_of_death,
       _id: req.params.id, //This is required, or a new ID will be assigned!
+
     });
 
     if (!errors.isEmpty()) {
@@ -243,32 +237,24 @@ exports.book_update_post = [
 
       // Get all authors and genres for form.
       const results = await Promise.all([
-        Author.find(),
-        Genre.find()
+        Book.find(),
       ]);
 
-      const [authors, genres] = results;
+      const [books] = results;
 
-      // Mark our selected genres as checked.
-      for (const genre of genres) {
-        if (book.genre.includes(genre._id)) {
-          genre.checked = "true";
-        }
-      }
-      res.render("book_form", {
-        title: "Update Book",
-        authors,
-        genres,
-        book,
+      res.render("author_form", {
+        title: "Update Author",
+        books,
+        author,
         errors: errors.array(),
       });
       return;
     }
 
     // Data from form is valid. Update the record.
-    const thebook = await Book.findByIdAndUpdate(req.params.id, book, {});
+    const theauthor = await Author.findByIdAndUpdate(req.params.id, author, {});
 
     // Successful: redirect to book detail page.
-    res.redirect(thebook.url);
+    res.redirect(theauthor.url);
   },
 ];
