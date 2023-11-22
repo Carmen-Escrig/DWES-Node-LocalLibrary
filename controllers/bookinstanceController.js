@@ -171,12 +171,15 @@ exports.bookinstance_update_get = async (req, res, next) => {
       return next(err);
     }
 
+    date = bookInstance.due_back.toISOString().replace(/T/, ' ').replace(/\..+/, '').substring(0, 10);
+
     // Success.
 
     res.render("bookInstance_form", {
       title: "Update Book Instance",
       book_list: books,
       bookinstance: bookInstance,
+      date : date,
     });
   } catch (err) {
     return next(err);

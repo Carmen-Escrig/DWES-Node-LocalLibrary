@@ -182,10 +182,15 @@ exports.author_update_get = async (req, res) => {
       return next(err);
     }
 
+    birth = author.date_of_birth.toISOString().replace(/T/, ' ').replace(/\..+/, '').substring(0, 10);
+    death = author.date_of_death.toISOString().replace(/T/, ' ').replace(/\..+/, '').substring(0, 10);
+
     // Success.
     res.render("author_form", {
       title: "Update Author",
       author: author,
+      birth: birth,
+      death: death,
     });
   } catch (err) {
     return next(err);
